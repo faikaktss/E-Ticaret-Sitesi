@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>E-Ticaret Sitesi</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+        }
+        header, footer {
+            background: #4CAF50;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        section {
+            max-width: 1000px;
+            margin: auto;
+            padding: 2rem;
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .product-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .product-card img {
+            width: 100%; height: 150px; object-fit: cover; border-radius: 5px;
+        }
+        input, button {
+            padding: 0.5rem;
+            margin: 0.3rem 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #388E3C;
+        }
+        ul { list-style: none; padding: 0; }
+        li {
+            background: #fff;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border-radius: 5px;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Profesyonel E-Ticaret Sitesi</h1>
+        <p id="welcome-message"></p>
+    </header>
+    
+    <section>
+        <h2>Ürünler</h2>
+        <div class="product-grid" id="product-list"></div>
+    </section>
+    
+    <section>
+        <h2>Kayıt Ol</h2>
+        <input id="register-user" placeholder="Kullanıcı Adı" />
+        <input id="register-pass" type="password" placeholder="Şifre" />
+        <button onclick="register()">Kayıt Ol</button>
+        
+        <h2>Giriş Yap</h2>
+        <input id="login-user" placeholder="Kullanıcı Adı" />
+        <input id="login-pass" type="password" placeholder="Şifre" />
+        <button onclick="login()">Giriş Yap</button>
+    </section>
+    
+    <section>
+        <h2>Admin Paneli - Ürün Ekle</h2>
+        <input id="admin-name" placeholder="Ürün Adı" />
+        <input id="admin-price" type="number" placeholder="Fiyat" />
+        <input id="admin-image" placeholder="Görsel URL" />
+        <button onclick="addProductFromAdmin()">Ürün Ekle</button>
+    </section>
+    
+    <section>
+        <h2>Sepet</h2>
+        <ul id="cart-items"></ul>
+        <p id="total">Toplam: 0₺</p>
+        <button onclick="clearCart()">Sepeti Temizle</button>
+    </section>
+    
+    <section>
+        <h2>Ödeme Bilgileri</h2>
+        <input id="card-name" placeholder="Kart Sahibi Adı" />
+        <input id="card-number" maxlength="16" placeholder="Kart Numarası" />
+        <input id="card-exp" placeholder="Son Kullanma Tarihi (AA/YY)" />
+        <input id="card-cvv" maxlength="3" placeholder="CVV" />
+        <button onclick="completeOrder()">Ödemeyi Tamamla</button>
+    </section>
+    
+    <section id="order-summary" class="hidden">
+        <h2>✅ Sipariş Alındı!</h2>
+        <p>Teşekkürler! Siparişiniz başarıyla oluşturuldu.</p>
+    </section>
+    
+    <footer>
+        <p>&copy; 2025 E-Ticaret Sitesi</p>
+    </footer>
+    
+    <script>
+        const users = {};
+        const carts = {};
+        let currentUser = null;
+        
+        const products = [
+            {
+                name: "Kahve Makinesi",
+                price: 999,
+                image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                name: "Bluetooth Kulaklık",
+                price: 499,
+                image: "https://images.unsplash.com/photo-1585386959984-a4155222c3f1?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                name: "Akıllı Saat",
+                price: 799,
+                image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                name: "Dizüstü Bilgisayar",
+                price: 10999,
+                image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                name: "Oyuncu Klavyesi",
+                price: 799,
+                image: "https://images.unsplash.com/photo-1587202372775-989f1f5c3d4b?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                name: "Mekanik Mouse",
+                price: 299,
+                image: "https://images.unsplash.com/photo-1588776814546-95dbf9d87927?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                name: "Taşınabilir Harddisk",
+                price: 649,
+                image: "https://images.unsplash.com/photo-1580910051070-cbf6f7c1ab95?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                name: "Kablosuz Şarj Cihazı",
+                price: 349,
+                image: "https://images.unsplash.com/photo-1580910418889-5b26ad88da4d?auto=format&fit=crop&w=800&q=80"
+            }
+        ];
+
+        
+        
+        function register() {
+            const user = document.getElementById("register-user").value;
+            const pass = document.getElementById("register-pass").value;
+            if (!users[user]) {
+                users[user] = pass;
+                carts[user] = [];
+                alert("Kayıt başarılı!");
+            // } else {
+                alert("Bu kullanıcı zaten var.");
+            }
+        }
+        
+        function login() {
+            const user = document.getElementById("login-user").value;
+            const pass = document.getElementById("login-pass").value;
+            if (users[user] === pass) {
+                currentUser = user;
+                document.getElementById("welcome-message").innerText = `Hoş geldin, ${user}`;
+                renderProducts();
+                renderCart();
+            } else {
+                alert("Giriş bilgileri hatalı.");
+            }
+        }
+        
+        function renderProducts() {
+            const list = document.getElementById("product-list");
+            list.innerHTML = "";
+            products.forEach((p, i) => {
+                const card = document.createElement("div");
+                card.className = "product-card";
+                card.innerHTML = `
+          <img src="${p.image}" alt="${p.name}" />
+          <h3>${p.name}</h3>
+          <p>${p.price}₺</p>
+          <button onclick="addToCart(${i})">Sepete Ekle</button>
+        `;
+                list.appendChild(card);
+            });
+        }
+        
+        function addToCart(index) {
+            if (!currentUser) return alert("Lütfen giriş yapın.");
+            const product = products[index];
+            const cart = carts[currentUser];
+            const item = cart.find(i => i.name === product.name);
+            if (item) {
+                item.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            renderCart();
+        }
+        
+        function removeFromCart(index) {
+            if (!currentUser) return;
+            carts[currentUser].splice(index, 1);
+            renderCart();
+        }
+        
+        function changeQty(index, delta) {
+            const item = carts[currentUser][index];
+            item.qty += delta;
+            if (item.qty <= 0) {
+                removeFromCart(index);
+            }
+            renderCart();
+        }
+        
+        function clearCart() {
+            if (!currentUser) return;
+            carts[currentUser] = [];
+            renderCart();
+        }
+        
+        function renderCart() {
+            const list = document.getElementById("cart-items");
+            const cart = carts[currentUser] || [];
+            list.innerHTML = "";
+            let total = 0;
+            cart.forEach((item, i) => {
+                total += item.price * item.qty;
+                const li = document.createElement("li");
+                li.innerHTML = `
+          ${item.name} - ${item.qty} adet - ${item.price * item.qty}₺
+          <button onclick="changeQty(${i}, 1)">+</button>
+          <button onclick="changeQty(${i}, -1)">-</button>
+          <button onclick="removeFromCart(${i})">Sil</button>
+        `;
+                list.appendChild(li);
+            });
+            document.getElementById("total").innerText = `Toplam: ${total}₺`;
+        }
+        
+        function completeOrder() {
+            if (!currentUser) return;
+            if (carts[currentUser].length === 0) return alert("Sepet boş.");
+            document.getElementById("order-summary").classList.remove("hidden");
+            clearCart();
+            alert("Siparişiniz başarıyla oluşturuldu!");
+        }
+        
+        function addProductFromAdmin() {
+            const name = document.getElementById("admin-name").value;
+            const price = parseFloat(document.getElementById("admin-price").value);
+            const image = document.getElementById("admin-image").value;
+            if (!name || !price || !image) return alert("Lütfen tüm alanları doldurun.");
+            products.push({ name, price, image });
+            renderProducts();
+        }
+    </script>
+</body>
+</html>
